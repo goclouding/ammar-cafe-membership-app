@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Logo from '../components/Logo'
 
@@ -8,14 +8,24 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
     setLoading(false)
-    if (error) setError('بيانات الدخول غير صحيحة')
+    if (error) {
+      console.error('login error', error)
+      const msg = error.message || 'بيانات الدخول غير صحيحة'
+      setError(`${msg}`)
+      return
+    }
+    if (data?.session) navigate('/admin', { replace: true })
   }
 
   return (

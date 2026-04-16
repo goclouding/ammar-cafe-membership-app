@@ -26,6 +26,9 @@ export default function App() {
         setRecoveryMode(true)
         navigate('/admin/reset-password', { replace: true })
       }
+      if (event === 'USER_UPDATED' || event === 'SIGNED_OUT') {
+        setRecoveryMode(false)
+      }
     })
     return () => sub.subscription.unsubscribe()
   }, [navigate])
