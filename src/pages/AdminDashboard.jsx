@@ -9,6 +9,69 @@ const TABS = [
   { key: 'rejected', label: 'مرفوض' },
 ]
 
+const EXPORT_COLUMNS = [
+  { key: 'id', label: 'الرقم' },
+  { key: 'full_name', label: 'الاسم الكامل' },
+  { key: 'date_of_birth', label: 'تاريخ الميلاد' },
+  { key: 'age', label: 'العمر' },
+  { key: 'city', label: 'المدينة' },
+  { key: 'email', label: 'البريد الإلكتروني' },
+  { key: 'mobile_number', label: 'رقم الجوال' },
+  { key: 'employer', label: 'جهة العمل' },
+  { key: 'job_title', label: 'المسمى الوظيفي' },
+  { key: 'invited_by_member', label: 'دعوة من عضو' },
+  { key: 'inviter_name', label: 'اسم العضو الداعي' },
+  { key: 'linkedin_url', label: 'LinkedIn' },
+  { key: 'instagram_url', label: 'Instagram' },
+  { key: 'profile_photo_url', label: 'رابط الصورة' },
+  { key: 'status', label: 'الحالة' },
+  { key: 'created_at', label: 'تاريخ التقديم' },
+]
+
+function formatCell(key, val) {
+  if (val === null || val === undefined) return ''
+  if (key === 'invited_by_member') return val ? 'نعم' : 'لا'
+  if (key === 'created_at') return new Date(val).toLocaleString('en-GB')
+  if (key === 'date_of_birth') return new Date(val).toLocaleDateString('en-GB')
+  return String(val)
+}
+
+function downloadBlob(content, filename, mime) {
+  const blob = new Blob([content], { type: mime })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function exportCSV(apps, status) {
+  const header = EXPORT_COLUMNS.map(c => c.label).join(',')
+  const rows = apps.map(a =>
+    EXPORT_COLUMNS.map(c => {
+      const v = formatCell(c.key, a[c.key])
+      return `"${v.replace(/"/g, '""')}"`
+    }).join(',')
+  )
+  const csv = '\uFEFF' + [header, ...rows].join('\r\n')
+  const stamp = new Date().toISOString().slice(0, 10)
+  downloadBlob(csv, `members-${status}-${stamp}.csv`, 'text/csv;charset=utf-8;')
+}
+
+function exportXLS(apps, status) {
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const thead = `<tr>${EXPORT_COLUMNS.map(c => `<th>${esc(c.label)}</th>`).join('')}</tr>`
+  const tbody = apps.map(a =>
+    `<tr>${EXPORT_COLUMNS.map(c => `<td>${esc(formatCell(c.key, a[c.key]))}</td>`).join('')}</tr>`
+  ).join('')
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body><table border="1">${thead}${tbody}</table></body></html>`
+  const stamp = new Date().toISOString().slice(0, 10)
+  downloadBlob('\uFEFF' + html, `members-${status}-${stamp}.xls`, 'application/vnd.ms-excel;charset=utf-8;')
+}
+
 function StatusBadge({ status }) {
   const map = { pending: 'badge-pending', approved: 'badge-approved', rejected: 'badge-rejected' }
   const labels = { pending: 'قيد المراجعة', approved: 'مقبول', rejected: 'مرفوض' }
@@ -90,7 +153,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
           {TABS.map(t => (
             <button
               key={t.key}
@@ -102,6 +165,16 @@ export default function AdminDashboard() {
               {t.label} ({counts[t.key]})
             </button>
           ))}
+          {(tab === 'approved' || tab === 'rejected') && apps.length > 0 && (
+            <div className="flex gap-2 ms-auto">
+              <button onClick={() => exportCSV(apps, tab)} className="btn-secondary text-xs">
+                تصدير CSV
+              </button>
+              <button onClick={() => exportXLS(apps, tab)} className="btn-secondary text-xs">
+                تصدير Excel
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Table */}

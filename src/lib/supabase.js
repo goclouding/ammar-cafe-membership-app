@@ -3,10 +3,14 @@ import { createClient } from '@supabase/supabase-js'
 const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!url || !anonKey) {
-  console.error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env')
-}
+export const supabaseConfigError = (!url || !anonKey)
+  ? 'Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY. Set them in the Vercel project env and redeploy.'
+  : null
 
-export const supabase = createClient(url, anonKey, {
-  auth: { persistSession: true, autoRefreshToken: true },
-})
+if (supabaseConfigError) console.error(supabaseConfigError)
+
+export const supabase = supabaseConfigError
+  ? null
+  : createClient(url, anonKey, {
+      auth: { persistSession: true, autoRefreshToken: true },
+    })
