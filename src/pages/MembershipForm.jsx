@@ -393,6 +393,7 @@ export default function MembershipForm() {
 
       <footer className="text-center text-muted text-xs py-4">
         © {new Date().getFullYear()} Ammar Cafe — جميع الحقوق محفوظة
+        <div className="opacity-50 mt-1" dir="ltr">build {__BUILD_SHA__}</div>
       </footer>
     </div>
   )
